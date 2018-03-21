@@ -1,0 +1,7 @@
+[style]
+based_on_style = pep8
+align_closing_bracket_with_visual_indent = false
+blank_line_before_nested_class_or_def = true
+indent_width = 4
+join_multiple_lines = false
+split_before_named_assigns = false

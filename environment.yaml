@@ -1,0 +1,15 @@
+name: dft-bare-susceptibility
+channels:
+- defaults
+- conda-forge
+dependencies:
+- autopep8=1.3.3=py_0
+- flake8=3.5.0=py36hda1b316_0
+- ipython=6.2.1=py36h88c514a_1
+- isort=4.3.4=py36_0
+- numpy=1.14.1=py36h3dfced4_1
+- pycodestyle=2.3.1=py36hf609f19_0
+- pydocstyle=2.1.1=py36_0
+- pytest=3.4.2=py36_0
+- python=3.6.4=hc3d631a_3
+
