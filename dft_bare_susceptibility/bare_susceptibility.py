@@ -1,7 +1,7 @@
 # -*- coding: utf-8; -*-
 
 # Modules
-from bare_susceptibility import dx_file_reader
+from dft_bare_susceptibility import dx_file_reader
 import numpy as np
 
 
