@@ -2,6 +2,7 @@
 
 # Modules
 from pathlib import Path
+import csv
 import re
 import gzip
 import numpy as np
@@ -165,15 +166,43 @@ def build_data_array(nx, ny, nz, num_items, in_array):
     return tmp_array
 
 
-def write_file(data_array, qx, qy, qz, origin, outfilepath):
+def write_file(data_array, qx, qy, qz, origin, outfilepath, data_format="csv"):
     # Grab data_array dimensions
     nx, ny, nz, shape = data_array.shape
 
     # Open file
-    with open(str(outfilepath), 'wt') as out_file:
-        write_header(nx, ny, nz, qx, qy, qz, origin, shape, out_file)
-        write_data_columns(data_array, shape, nx, ny, nz, out_file)
-        write_footer(out_file)
+    if data_format == "dx":
+        with open(str(outfilepath), 'wt') as out_file:
+            write_header(nx, ny, nz, qx, qy, qz, origin, shape, out_file)
+            write_data_columns(data_array, shape, nx, ny, nz, out_file)
+            write_footer(out_file)
+
+    elif data_format == "csv":
+        with open(str(outfilepath), 'w', newline="") as out_file:
+            write_csv_format(data_array, shape, nx, ny, nz, out_file)
+
+    else:
+        print("{0} is not a valid data format, exiting...".format(data_format))
+
+
+def write_csv_format(data_array, shape, nx, ny, nz, outfile):
+    fieldnames = ["band_index", "kx", "ky", "kz", "energy"]
+    writer = csv.DictWriter(outfile, fieldnames=fieldnames,
+                            quoting=csv.QUOTE_MINIMAL)
+
+    writer.writeheader()
+    for kx in range(nx):
+        for ky in range(ny):
+            for kz in range(nz):
+                for band_index in range(shape):
+                    data_row = {
+                        "band_index": band_index,
+                        "kx": kx,
+                        "ky": ky,
+                        "kz": kz,
+                        "energy": data_array[kx, ky, kz, band_index]
+                    }
+                    writer.writerow(data_row)
 
 
 def write_data_columns(data_array, shape, nx, ny, nz, outfile):
