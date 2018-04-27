@@ -111,4 +111,5 @@ def main(in_file_path, out_file_path, gamma, temperature):
         reciprocal_vectors[1],
         reciprocal_vectors[2],
         origin,
-        out_file_path)
+        out_file_path,
+        "dx")
