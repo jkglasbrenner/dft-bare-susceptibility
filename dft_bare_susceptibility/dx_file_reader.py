@@ -6,6 +6,7 @@ import csv
 import re
 import gzip
 import numpy as np
+import sys
 
 
 # Functions
@@ -168,7 +169,16 @@ def build_data_array(nx, ny, nz, num_items, in_array):
 
 def write_file(data_array, qx, qy, qz, origin, outfilepath, data_format="csv"):
     # Grab data_array dimensions
-    nx, ny, nz, shape = data_array.shape
+    array_dimensions = data_array.shape
+    if len(array_dimensions) == 3:
+        nx, ny, nz = array_dimensions
+        shape = None
+
+    elif len(array_dimensions) == 4:
+        shape, nx, ny, nz = array_dimensions
+
+    else:
+        sys.exit("Unexpected data structure, exiting...")
 
     # Open file
     if data_format == "dx":
@@ -186,22 +196,41 @@ def write_file(data_array, qx, qy, qz, origin, outfilepath, data_format="csv"):
 
 
 def write_csv_format(data_array, shape, nx, ny, nz, outfile):
-    fieldnames = ["band_index", "kx", "ky", "kz", "energy"]
-    writer = csv.DictWriter(outfile, fieldnames=fieldnames,
-                            quoting=csv.QUOTE_MINIMAL)
+    if shape is not None:
+        fieldnames = ["band_index", "kx", "ky", "kz", "energy"]
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames,
+                                quoting=csv.QUOTE_MINIMAL)
+        writer.writeheader()
+        for band_index in range(shape):
+            for kx in range(nx):
+                for ky in range(ny):
+                    for kz in range(nz):
+                        data_row = {
+                            "band_index": band_index,
+                            "kx": kx,
+                            "ky": ky,
+                            "kz": kz,
+                            "energy": data_array[band_index, kx, ky, kz]
+                        }
 
-    writer.writeheader()
-    for kx in range(nx):
-        for ky in range(ny):
-            for kz in range(nz):
-                for band_index in range(shape):
+                        writer.writerow(data_row)
+
+    else:
+        fieldnames = ["kx", "ky", "kz", "chi_real", "chi_imag"]
+        writer = csv.DictWriter(outfile, fieldnames=fieldnames,
+                                quoting=csv.QUOTE_MINIMAL)
+        writer.writeheader()
+        for kx in range(nx):
+            for ky in range(ny):
+                for kz in range(nz):
                     data_row = {
-                        "band_index": band_index,
                         "kx": kx,
                         "ky": ky,
                         "kz": kz,
-                        "energy": data_array[kx, ky, kz, band_index]
+                        "chi_real": np.real(data_array[kx, ky, kz]),
+                        "chi_imag": np.imag(data_array[kx, ky, kz])
                     }
+
                     writer.writerow(data_row)
 
 
@@ -222,14 +251,25 @@ def write_data_columns(data_array, shape, nx, ny, nz, outfile):
 def zz_loop(data_array, shape, nz, xx, yy, zz, outfile):
     # Set up output format
     string = ''
-    for n in range(shape):
-        string = string + '{{i{0}:12.6f}}'.format(n)
+    if shape is not None:
+        for n in range(shape):
+            string = string + '{{i{0}:12.6f}}'.format(n)
+
+    else:
+        for n in range(2):
+            string = string + '{{i{0}:12.6f}}'.format(n)
 
     # Printing loop
     for k in range(nz):
         line_dict = dict()
-        for n in range(shape):
-            line_dict["i" + str(n)] = data_array[xx, yy, zz, n]
+        if shape is not None:
+            for n in range(shape):
+                line_dict["i" + str(n)] = data_array[n, xx, yy, zz]
+
+        else:
+            line_dict["i0"] = np.real(data_array[xx, yy, zz])
+            line_dict["i1"] = np.imag(data_array[xx, yy, zz])
+
         tmp_line = string.format(**line_dict)
         print(tmp_line, file=outfile)
         zz = iterate_counter(zz, nz)
@@ -239,6 +279,9 @@ def zz_loop(data_array, shape, nz, xx, yy, zz, outfile):
 
 
 def write_header(nx, ny, nz, qx, qy, qz, origin, shape, outfile):
+    if shape is None:
+        shape = 2
+
     nitems = int(nx * ny * nz)
     header = (' object 1 class gridpositions counts  {0:>11} {1:>11} {2:>11}\n'
               'origin {3:14.8f} {4:14.8f} {5:14.8f}\n'
@@ -295,7 +338,7 @@ def expand_data_range(data_array):
     nz = in_nz + 1
 
     # Allocate array for expanded data
-    new_data = np.zeros([nx, ny, nz])
+    new_data = np.zeros([nx, ny, nz], dtype=np.complex)
 
     # Fill existing array
     new_data[:-1, :-1, :-1] = data_array
